@@ -25,17 +25,16 @@ class SpeechRecognizer:
     def transcribe_file(self, wav_path):
         import wave
 
-        wf = wave.open(wav_path, "rb")
+        with wave.open(wav_path, "rb") as wf:
+            if wf.getframerate() != self.sample_rate:
+                raise ValueError("Frecuencia incorrecta")
 
-        if wf.getframerate() != self.sample_rate:
-            raise ValueError("Frecuencia incorrecta")
+            rec = self._KaldiRecognizer(self.model, self.sample_rate)
 
-        rec = self._KaldiRecognizer(self.model, self.sample_rate)
+            while True:
+                data = wf.readframes(4000)
+                if not data:
+                    break
+                rec.AcceptWaveform(data)
 
-        while True:
-            data = wf.readframes(4000)
-            if not data:
-                break
-            rec.AcceptWaveform(data)
-
-        return json.loads(rec.FinalResult()).get("text", "")
+            return json.loads(rec.FinalResult()).get("text", "")
