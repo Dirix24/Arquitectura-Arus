@@ -7,7 +7,6 @@ archivo del sistema al que ARUS tuviera permisos de escritura. Se
 añade PathGuard (área de trabajo) y auditoría real.
 """
 
-from pathlib import Path
 
 from tools.base_tool import BaseTool
 from security.path_guard import PathGuard
@@ -61,31 +60,13 @@ class ReplaceTextTool(BaseTool):
             self.audit.log(tool="replace_text", arguments={"path": path}, result=motivo)
             return f"ERROR: {motivo}"
 
-        file = Path(path)
-
-        if not file.exists():
-            resultado = "ERROR: Archivo no encontrado."
-            self.audit.log(tool="replace_text", arguments={"path": path}, result=resultado)
-            return resultado
-
-        text = file.read_text(
-            encoding="utf-8",
-        )
-
-        if old not in text:
-            resultado = "ERROR: Texto no encontrado."
-            self.audit.log(tool="replace_text", arguments={"path": path}, result=resultado)
-            return resultado
-
-        text = text.replace(
-            old,
-            new,
-        )
-
-        file.write_text(
-            text,
-            encoding="utf-8",
-        )
+        try:
+            text = self.guard.read(path)
+            if not old or old not in text:
+                return "ERROR: Texto no encontrado."
+            self.guard.write(path, text.replace(old, new))
+        except (OSError, ValueError):
+            return "ERROR: No se pudo modificar el archivo autorizado."
 
         resultado = "Texto reemplazado correctamente."
 
