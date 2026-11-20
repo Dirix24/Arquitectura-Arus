@@ -21,17 +21,14 @@ ninguna todavía. Ver [`docs/CONECTAR_IA.md`](docs/CONECTAR_IA.md).
 - **Memoria real y persistente**, no solo el historial de la sesión:
   memoria de largo plazo, preferencias de usuario, memoria semántica y de
   tareas (`memory/`).
-- **Herramientas que la IA puede usar de verdad** durante la
-  conversación (`tools/`): calculadora, archivos, git (solo lectura),
-  ejecutar tests, búsqueda web real, capturas de pantalla, y más — con un
-  planificador y un verificador (`brain/planner.py`,
-  `brain/verifier.py`) que revisan el resultado y reintentan si algo
-  falla.
-- **Seguridad activa, no decorativa**: los comandos de shell y el acceso
-  a archivos pasan por `security/shell_guard.py` y
-  `security/path_guard.py`, que de verdad restringen lo que se puede
-  ejecutar y a qué rutas se puede acceder — no son una promesa en un
-  comentario.
+- **Herramientas del modelo**. Calculadora, fecha y hora, lectura de
+  archivos UTF-8 del workspace y operaciones locales `pwd`, `echo`,
+  `ls` y `cat`. El resto de las herramientas queda fuera del
+  despacho automático. Git de solo lectura y el ejecutor de pruebas
+  siguen disponibles desde sus módulos para uso explícito.
+- **Workspace**. Define `ARUS_WORKSPACE` para elegir el directorio
+  de trabajo de archivos. Por defecto, ARUS usa el directorio de arranque.
+  La lectura y la escritura protegidas se verificaron en Linux.
 - **Tareas autónomas** que sobreviven a un reinicio de la aplicación
   (`brain/long_task_manager.py`).
 - **RAG** (recuperación aumentada) para consultar documentos propios
@@ -53,7 +50,7 @@ ninguna todavía. Ver [`docs/CONECTAR_IA.md`](docs/CONECTAR_IA.md).
 Requiere **Python 3.11+**.
 
 ```bash
-git clone https://github.com/dminayaramos-afk/Arquitectura-Arus.git
+git clone https://github.com/Dirix24/Arquitectura-Arus.git
 cd Arquitectura-Arus
 python3 -m venv .venv
 source .venv/bin/activate        # En Windows: .venv\Scripts\activate
@@ -98,6 +95,10 @@ su cuenta. Para conectar una (o varias), edita `config/settings.json`:
 
 Guía completa, con ejemplos para LM Studio y cómo añadir un motor nuevo,
 en [`docs/CONECTAR_IA.md`](docs/CONECTAR_IA.md).
+
+El inicio automático solo abre Ollama en una dirección de loopback.
+Si el puerto ya está ocupado, ARUS lo deja intacto. Al cerrar, gestiona
+únicamente el proceso que inició esta instancia.
 
 ## Ejecutar
 
@@ -168,3 +169,14 @@ probado de verdad (no solo "compila") antes de darse por completada, y
 las carencias se han dejado documentadas en vez de simuladas.
 
 
+
+## Licencia y estado
+
+El código original de Arquitectura ARUS se distribuye bajo la [licencia MIT](LICENSE).
+Las dependencias, modelos y materiales de terceros conservan sus propias
+licencias y atribuciones.
+
+Este es el primer incremento de endurecimiento. La versión 1.0 permanece
+pendiente. Consulta la [auditoría de estabilidad](docs/STABILITY_AUDIT.md)
+para la evidencia local y el alcance restante. Codex, una herramienta de IA
+de OpenAI, asistió con el código, las pruebas y la documentación.

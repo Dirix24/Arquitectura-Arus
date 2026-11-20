@@ -9,7 +9,6 @@ PathGuard (área de trabajo) y auditoría real.
 
 from __future__ import annotations
 
-from pathlib import Path
 
 from tools.base_tool import BaseTool
 from security.path_guard import PathGuard
@@ -57,17 +56,10 @@ class FileWriterTool(BaseTool):
             self.audit.log(tool="file_writer", arguments={"path": path}, result=motivo)
             return f"ERROR: {motivo}"
 
-        file = Path(path)
-
-        file.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-
-        file.write_text(
-            content,
-            encoding="utf-8",
-        )
+        try:
+            self.guard.write(path, content)
+        except (OSError, ValueError):
+            return "ERROR: No se pudo escribir el archivo autorizado."
 
         resultado = f"Archivo '{path}' escrito correctamente."
 

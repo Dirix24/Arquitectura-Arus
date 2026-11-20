@@ -10,7 +10,6 @@ se añade auditoría real (antes esta tool no dejaba ningún rastro de
 qué archivos tocaba).
 """
 
-from pathlib import Path
 from tools.base_tool import BaseTool
 from security.path_guard import PathGuard
 from security.audit_logger import AuditLogger
@@ -29,8 +28,8 @@ class FileTool(BaseTool):
         "required": ["action", "path"]
     }
 
-    def __init__(self):
-        self.guard = PathGuard()
+    def __init__(self, base_dir=None):
+        self.guard = PathGuard(base_dir)
         self.audit = AuditLogger()
 
     def execute(self, action: str, path: str, content: str = ""):
@@ -40,24 +39,19 @@ class FileTool(BaseTool):
             self.audit.log(tool="file", arguments={"action": action, "path": path}, result=motivo)
             return f"ERROR: {motivo}"
 
-        target = Path(path)
         if action == "read":
-            if not target.exists():
-                resultado = "ERROR: El archivo no existe."
-            else:
-                try:
-                    resultado = target.read_text(encoding="utf-8")
-                except Exception as e:
-                    resultado = str(e)
+            try:
+                resultado = self.guard.read(path)
+            except (OSError, ValueError):
+                resultado = "ERROR: No se pudo leer el archivo autorizado."
         elif action == "write":
             try:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(content, encoding="utf-8")
+                self.guard.write(path, content)
                 resultado = "OK"
-            except Exception as e:
-                resultado = str(e)
+            except (OSError, ValueError):
+                resultado = "ERROR: No se pudo escribir el archivo autorizado."
         else:
             resultado = "ERROR: Acción desconocida."
 
-        self.audit.log(tool="file", arguments={"action": action, "path": path}, result=resultado[:200])
+        self.audit.log(tool="file", arguments={"action": action, "path": path}, result="ERROR" if resultado.startswith("ERROR:") else "OK")
         return resultado

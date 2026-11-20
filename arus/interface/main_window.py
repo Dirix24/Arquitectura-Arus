@@ -1,6 +1,4 @@
-import requests
-import shutil
-import subprocess
+from ai.ollama_process import OllamaProcess
 import os
 import time
 import json
@@ -348,7 +346,7 @@ class ARUSWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.ollama_process = None
+        self.ollama_process = OllamaProcess()
         self._iniciar_ia_configurada()
 
         self.voice = VoiceCore()
@@ -768,44 +766,11 @@ class ARUSWindow(QMainWindow):
             self.iniciar_ollama_automatico(provider_config)
 
     def iniciar_ollama_automatico(self, provider_config: dict | None = None):
-        provider_config = provider_config or {}
-        host = provider_config.get("host", "http://127.0.0.1:11434")
+        host = (provider_config or {}).get("host", "http://127.0.0.1:11434")
         try:
-            res = requests.get(host, timeout=1)
-            if res.status_code == 200:
-                return
-        except Exception:
-            pass
-        try:
-            subprocess.run(["pkill", "-9", "ollama"], stderr=subprocess.DEVNULL)
-            time.sleep(0.5)
-            env = os.environ.copy()
-            env["OLLAMA_NUM_PARALLEL"] = "1"
-            env["OLLAMA_VULKAN"] = "0"
-            env["CUDA_VISIBLE_DEVICES"] = ""
-
-            # Resuelve el ejecutable de Ollama sin asumir que está en el PATH:
-            # 1) variable de entorno ARUS_OLLAMA_PATH si el usuario la define,
-            # 2) "ollama" si shutil.which lo encuentra en el PATH,
-            # 3) si no, deja que falle con un mensaje claro en vez de silenciarse.
-            ollama_bin = os.environ.get("ARUS_OLLAMA_PATH") or shutil.which("ollama") or "ollama"
-
-            self.ollama_process = subprocess.Popen(
-                [ollama_bin, "serve"], 
-                env=env, 
-                stdout=subprocess.DEVNULL, 
-                stderr=subprocess.DEVNULL,
-                preexec_fn=os.setsid if hasattr(os, "setsid") else None
-            )
-            time.sleep(2)
-        except FileNotFoundError:
-            print(
-                f"[ARUS] No se encontró el ejecutable de Ollama ('{ollama_bin}'). "
-                "Define la variable de entorno ARUS_OLLAMA_PATH con la ruta completa "
-                "al binario de ollama, o añádelo a tu PATH."
-            )
-        except Exception as e:
-            print(f"Error al iniciar Ollama: {e}")
+            self.ollama_process.start(host)
+        except (OSError, ValueError, RuntimeError) as error:
+            print(f"[ARUS] No se pudo iniciar Ollama: {error}")
 
     def update_system(self):
         try:
@@ -915,22 +880,10 @@ class ARUSWindow(QMainWindow):
         super().showEvent(event)
 
     def destruir_ollama_completo(self):
-        # Solo se apaga Ollama si ARUS fue quien lo arrancó (self.ollama_process
-        # no es None). Si el usuario ya tenía Ollama corriendo por su cuenta,
-        # o está usando otro proveedor de IA, ARUS no debe matarlo al cerrar.
-        if not self.ollama_process:
-            return
         try:
-            self.ollama_process.terminate()
-            self.ollama_process.wait(timeout=2)
-        except Exception:
-            pass
-
-        try:
-            subprocess.run(["pkill", "-9", "-f", "ollama"], stderr=subprocess.DEVNULL)
-        except Exception:
-            pass
-
+            self.ollama_process.stop()
+        except (OSError, TimeoutError) as error:
+            print(f"[ARUS] No se pudo cerrar el proceso propio de Ollama: {error}")
 
     def nuevo_chat(self):
         self.current_chat_id = None

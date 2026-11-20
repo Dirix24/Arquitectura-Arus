@@ -11,12 +11,11 @@ import hashlib
 import uuid
 import json
 import platform
-import ast
-import operator
 import json
 import uuid
 import urllib.parse
 
+from tools.calculator_tool import CalculatorTool
 from agents.base_agent import BaseAgent
 from agents.agent_response import AgentResponse
 
@@ -321,43 +320,8 @@ class ToolAgent(BaseAgent):
                 )
 
         if lower.startswith("calc "):
-            try:
-                expr = text[5:]
-
-                allowed = {
-                    ast.Add: operator.add,
-                    ast.Sub: operator.sub,
-                    ast.Mult: operator.mul,
-                    ast.Div: operator.truediv,
-                    ast.Pow: operator.pow
-                }
-
-                def calc_node(node):
-                    if isinstance(node, ast.Constant):
-                        return node.value
-
-                    if isinstance(node, ast.BinOp):
-                        return allowed[type(node.op)](
-                            calc_node(node.left),
-                            calc_node(node.right)
-                        )
-
-                    raise ValueError("Operación no permitida")
-
-                resultado = calc_node(
-                    ast.parse(expr, mode="eval").body
-                )
-
-                return AgentResponse(
-                    True,
-                    str(resultado)
-                )
-
-            except Exception as e:
-                return AgentResponse(
-                    False,
-                    f"Error cálculo: {e}"
-                )
+            result = CalculatorTool().execute(text[5:])
+            return AgentResponse(not result.startswith("Error de cálculo:"), result)
 
         if lower.startswith("hora"):
             return AgentResponse(

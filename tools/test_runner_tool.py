@@ -21,7 +21,7 @@ cuántos fallaron para que el modelo (o el propio Danny) lo interprete.
 
 from __future__ import annotations
 
-import shutil
+import sys
 import subprocess
 from pathlib import Path
 
@@ -90,7 +90,7 @@ class TestRunnerTool(BaseTool):
         try:
 
             resultado = subprocess.run(
-                ["python3", "-m", "pytest", str(ruta), "-q"],
+                [sys.executable, "-m", "pytest", str(ruta), "-q"],
                 capture_output=True, text=True, timeout=120,
             )
 
@@ -112,7 +112,7 @@ class TestRunnerTool(BaseTool):
                 patron = pattern
 
             comando = [
-                "python3", "-m", "unittest", "discover",
+                sys.executable, "-m", "unittest", "discover",
                 "-s", directorio_inicio, "-p", patron, "-v",
             ]
 
